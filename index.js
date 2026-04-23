@@ -18,15 +18,24 @@ const fs = require('fs');
 const TOKEN = process.env.TOKEN;
 
 
-const CARTELLINO_CHANNEL = "1496781775849000970";
-const MULTE_CHANNEL = "1496125333500465162";
-const LOG_CHANNEL = "1496616270265581641";
+const CARTELLINO_CHANNEL = "1496799334774083584";
+const MULTE_CHANNEL = "1496798332469903421";
+const LOG_CHANNEL = "1496799111557550090";
 
-const STAFF_ROLE_1 = "1496122762354229299";
-const STAFF_ROLE_2 = "1496613807953416202";
+const STAFF_ROLES = [
+  "1496558476279939131",
+  "1496558504302088212",
+  "1496558515601539142",
+  "1496558519321890866",
+  "1496558489961762946",
+  "1496663198605115462",
+  "1496558477089177750",
+  "1496558478846591127",
+  "1496558488854200542"
+];
 
 const CLIENT_ID = "1496607395785343016";
-const GUILD_ID = "1496119913000206447";
+const GUILD_ID = "1496557447639203840";
 
 
 const DB_FILE = "./database.json";
@@ -58,7 +67,7 @@ function getUser(id) {
 }
 
 function isStaff(member) {
-  return member.roles.cache.has(STAFF_ROLE_1) || member.roles.cache.has(STAFF_ROLE_2);
+  return STAFF_ROLES.some(role => member.roles.cache.has(role));
 }
 
 function formatTime(ms) {
@@ -83,7 +92,7 @@ client.once(Events.ClientReady, async () => {
     new ButtonBuilder().setCustomId('timbra').setLabel('🟢 Entra').setStyle(ButtonStyle.Success),
     new ButtonBuilder().setCustomId('stimbra').setLabel('🔴 Esci').setStyle(ButtonStyle.Danger),
     new ButtonBuilder().setCustomId('ore').setLabel('⏱ Ore').setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId('servizio').setLabel('👀 Servizio').setStyle(ButtonStyle.Secondary)
+    new ButtonBuilder().setCustomId('servizio').setLabel('👥 Servizio').setStyle(ButtonStyle.Secondary)
   );
 
   const multe = new ActionRowBuilder().addComponents(
@@ -97,7 +106,7 @@ client.once(Events.ClientReady, async () => {
 # Timbra 🟢: timbra il tuo servizio  
 # Stimbra 🔴: quando esci dal servizio, ti conterà le ore  
 # Info ⏱: per sapere quante ore, minuti e secondi hai fatto  
-# In servizio 👀: per vedere chi sta in servizio
+# In servizio 👥: per vedere chi sta in servizio
 `,
     components: [cartellino]
   });
@@ -118,6 +127,7 @@ client.on(Events.InteractionCreate, async interaction => {
   const id = interaction.user.id;
   const userData = getUser(id);
 
+  
   if (interaction.isButton()) {
 
     if (interaction.customId === "timbra") {
@@ -156,7 +166,7 @@ client.on(Events.InteractionCreate, async interaction => {
       return interaction.reply({ content: lista, ephemeral: true });
     }
 
-    if (interaction.customId === "Modulo Multa") {
+    if (interaction.customId === "multa") {
 
       const modal = new ModalBuilder()
         .setCustomId("multa_form")
@@ -184,6 +194,7 @@ client.on(Events.InteractionCreate, async interaction => {
     }
   }
 
+  
   if (interaction.isModalSubmit()) {
 
     const targetId = interaction.fields.getTextInputValue('utente').replace(/[<@!>]/g, "");
@@ -222,6 +233,7 @@ Motivo: ${motivo}
     return interaction.reply({ content: "Multa mandata", ephemeral: true });
   }
 
+  
   if (interaction.isChatInputCommand()) {
 
     if (interaction.commandName === "info") {
@@ -239,6 +251,17 @@ Numero multe: ${d.multe.length}
 
     if (!isStaff(interaction.member)) {
       return interaction.reply({ content: "Non autorizzato", ephemeral: true });
+    }
+
+    if (interaction.commandName === "aggiungi_ore") {
+      const user = interaction.options.getUser("utente");
+      const ore = interaction.options.getInteger("ore");
+
+      const d = getUser(user.id);
+      d.ore += ore * 3600000;
+
+      saveData();
+      return interaction.reply(`Ore aggiunte a ${user}`);
     }
 
     if (interaction.commandName === "togliore") {
@@ -266,6 +289,24 @@ Numero multe: ${d.multe.length}
       saveData();
       return interaction.reply("Cartellino chiuso");
     }
+
+    if (interaction.commandName === "modificamulta") {
+      const user = interaction.options.getUser("utente");
+      const idMulta = interaction.options.getString("id");
+      const nuovoImporto = interaction.options.getInteger("importo");
+
+      const d = getUser(user.id);
+      const multa = d.multe.find(m => m.id == idMulta);
+
+      if (!multa) return interaction.reply("Multa non trovata");
+
+      d.totaleMulte -= multa.importo;
+      multa.importo = nuovoImporto;
+      d.totaleMulte += nuovoImporto;
+
+      saveData();
+      return interaction.reply("Multa modificata");
+    }
   }
 });
 
@@ -277,6 +318,12 @@ const commands = [
     .addUserOption(o => o.setName("utente").setDescription("Utente").setRequired(true)),
 
   new SlashCommandBuilder()
+    .setName("aggiungi_ore")
+    .setDescription("Aggiunge ore")
+    .addUserOption(o => o.setName("utente").setDescription("Utente").setRequired(true))
+    .addIntegerOption(o => o.setName("ore").setDescription("Ore").setRequired(true)),
+
+  new SlashCommandBuilder()
     .setName("togliore")
     .setDescription("Togli ore")
     .addUserOption(o => o.setName("utente").setDescription("Utente").setRequired(true))
@@ -285,7 +332,14 @@ const commands = [
   new SlashCommandBuilder()
     .setName("forzastop")
     .setDescription("Chiudi cartellino")
+    .addUserOption(o => o.setName("utente").setDescription("Utente").setRequired(true)),
+
+  new SlashCommandBuilder()
+    .setName("modificamulta")
+    .setDescription("Modifica multa")
     .addUserOption(o => o.setName("utente").setDescription("Utente").setRequired(true))
+    .addStringOption(o => o.setName("id").setDescription("ID multa").setRequired(true))
+    .addIntegerOption(o => o.setName("importo").setDescription("Nuovo importo").setRequired(true))
 ];
 
 const rest = new REST({ version: '10' }).setToken(TOKEN);
