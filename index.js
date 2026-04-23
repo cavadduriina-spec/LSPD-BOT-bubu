@@ -78,17 +78,16 @@ const client = new Client({
 
 // READY
 client.once(Events.ClientReady, async () => {
-  console.log("Bot online");
 
   const cartellino = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId('timbra').setLabel('Entra').setStyle(ButtonStyle.Success),
-    new ButtonBuilder().setCustomId('stimbra').setLabel('Esci').setStyle(ButtonStyle.Danger),
-    new ButtonBuilder().setCustomId('ore').setLabel('Ore').setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId('servizio').setLabel('Servizio').setStyle(ButtonStyle.Secondary)
+    new ButtonBuilder().setCustomId('timbra').setLabel('🟢 Entra').setStyle(ButtonStyle.Success),
+    new ButtonBuilder().setCustomId('stimbra').setLabel('🔴 Esci').setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId('ore').setLabel('⏱ Ore').setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId('servizio').setLabel('👥 Servizio').setStyle(ButtonStyle.Secondary)
   );
 
   const multe = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId('multa').setLabel('Multa').setStyle(ButtonStyle.Danger)
+    new ButtonBuilder().setCustomId('multa').setLabel('💸 Multa').setStyle(ButtonStyle.Danger)
   );
 
   (await client.channels.fetch(CARTELLINO_CHANNEL)).send({ content: "Cartellino", components: [cartellino] });
@@ -101,12 +100,10 @@ client.on(Events.InteractionCreate, async interaction => {
   const id = interaction.user.id;
   const userData = getUser(id);
 
-  // BOTTONI
   if (interaction.isButton()) {
 
     if (interaction.customId === "timbra") {
-      if (userData.start)
-        return interaction.reply({ content: "Già in servizio", ephemeral: true });
+      if (userData.start) return interaction.reply({ content: "Già in servizio", ephemeral: true });
 
       userData.start = Date.now();
       inServizio.add(id);
@@ -116,8 +113,7 @@ client.on(Events.InteractionCreate, async interaction => {
     }
 
     if (interaction.customId === "stimbra") {
-      if (!userData.start)
-        return interaction.reply({ content: "Non in servizio", ephemeral: true });
+      if (!userData.start) return interaction.reply({ content: "Non in servizio", ephemeral: true });
 
       const durata = Date.now() - userData.start;
       userData.ore += durata;
@@ -148,22 +144,19 @@ client.on(Events.InteractionCreate, async interaction => {
 
       modal.addComponents(
         new ActionRowBuilder().addComponents(
-          new TextInputBuilder()
-            .setCustomId('utente')
-            .setLabel("Tag collega (@utente)")
-            .setStyle(TextInputStyle.Short)
+          new TextInputBuilder().setCustomId('utente').setLabel("Tag collega (@utente)").setStyle(TextInputStyle.Short)
         ),
         new ActionRowBuilder().addComponents(
-          new TextInputBuilder()
-            .setCustomId('motivo')
-            .setLabel("Motivo")
-            .setStyle(TextInputStyle.Paragraph)
+          new TextInputBuilder().setCustomId('nome').setLabel("Nome e Cognome").setStyle(TextInputStyle.Short)
         ),
         new ActionRowBuilder().addComponents(
-          new TextInputBuilder()
-            .setCustomId('importo')
-            .setLabel("Importo")
-            .setStyle(TextInputStyle.Short)
+          new TextInputBuilder().setCustomId('nascita').setLabel("Data di nascita").setStyle(TextInputStyle.Short)
+        ),
+        new ActionRowBuilder().addComponents(
+          new TextInputBuilder().setCustomId('motivo').setLabel("Motivo").setStyle(TextInputStyle.Paragraph)
+        ),
+        new ActionRowBuilder().addComponents(
+          new TextInputBuilder().setCustomId('importo').setLabel("Importo").setStyle(TextInputStyle.Short)
         )
       );
 
@@ -171,10 +164,11 @@ client.on(Events.InteractionCreate, async interaction => {
     }
   }
 
-  // MODULO MULTA
   if (interaction.isModalSubmit()) {
 
     const targetId = interaction.fields.getTextInputValue('utente').replace(/[<@!>]/g, "");
+    const nome = interaction.fields.getTextInputValue('nome');
+    const nascita = interaction.fields.getTextInputValue('nascita');
     const motivo = interaction.fields.getTextInputValue('motivo');
     const importo = parseInt(interaction.fields.getTextInputValue('importo')) || 0;
 
@@ -183,6 +177,8 @@ client.on(Events.InteractionCreate, async interaction => {
     const multa = {
       id: Date.now(),
       agente: id,
+      nome,
+      nascita,
       motivo,
       importo
     };
@@ -195,6 +191,10 @@ client.on(Events.InteractionCreate, async interaction => {
     (await client.channels.fetch(LOG_CHANNEL)).send(`
 Agente: <@${id}>
 Collega: <@${targetId}>
+
+Nome: ${nome}
+Nascita: ${nascita}
+
 Importo: ${importo}
 Motivo: ${motivo}
 `);
@@ -202,7 +202,6 @@ Motivo: ${motivo}
     return interaction.reply({ content: "Multa mandata", ephemeral: true });
   }
 
-  // COMANDI
   if (interaction.isChatInputCommand()) {
 
     if (interaction.commandName === "info") {
@@ -250,7 +249,7 @@ Numero multe: ${d.multe.length}
   }
 });
 
-// SLASH COMMANDS
+// SLASH
 const commands = [
   new SlashCommandBuilder()
     .setName("info")
