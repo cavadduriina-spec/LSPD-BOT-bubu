@@ -90,8 +90,27 @@ client.once(Events.ClientReady, async () => {
     new ButtonBuilder().setCustomId('multa').setLabel('💸 Multa').setStyle(ButtonStyle.Danger)
   );
 
-  (await client.channels.fetch(CARTELLINO_CHANNEL)).send({ content: "Cartellino", components: [cartellino] });
-  (await client.channels.fetch(MULTE_CHANNEL)).send({ content: "Multe", components: [multe] });
+  (await client.channels.fetch(CARTELLINO_CHANNEL)).send({
+    content: `
+Usa questi tasti per timbrare cartellino
+
+Timbra 🟢: timbra il tuo servizio  
+Stimbra 🔴: quando esci dal servizio, ti conterà le ore  
+Info ⏱: per sapere quante ore, minuti e secondi hai fatto  
+In servizio 👥: per vedere chi sta in servizio
+`,
+    components: [cartellino]
+  });
+
+  (await client.channels.fetch(MULTE_CHANNEL)).send({
+    content: `
+Usa questo bottone per segnare la multa
+
+Quando si aprirà il modulo compilalo con i dati richiesti
+`,
+    components: [multe]
+  });
+
 });
 
 // INTERAZIONI
@@ -103,7 +122,8 @@ client.on(Events.InteractionCreate, async interaction => {
   if (interaction.isButton()) {
 
     if (interaction.customId === "timbra") {
-      if (userData.start) return interaction.reply({ content: "Già in servizio", ephemeral: true });
+      if (userData.start)
+        return interaction.reply({ content: "Già in servizio", ephemeral: true });
 
       userData.start = Date.now();
       inServizio.add(id);
@@ -113,7 +133,8 @@ client.on(Events.InteractionCreate, async interaction => {
     }
 
     if (interaction.customId === "stimbra") {
-      if (!userData.start) return interaction.reply({ content: "Non in servizio", ephemeral: true });
+      if (!userData.start)
+        return interaction.reply({ content: "Non in servizio", ephemeral: true });
 
       const durata = Date.now() - userData.start;
       userData.ore += durata;
