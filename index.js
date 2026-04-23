@@ -28,7 +28,7 @@ const STAFF_ROLE_2 = "1496613807953416202";
 const CLIENT_ID = "1496607395785343016";
 const GUILD_ID = "1496119913000206447";
 
-// DB
+// DATABASE
 const DB_FILE = "./database.json";
 let data = {};
 
@@ -78,6 +78,7 @@ const client = new Client({
 
 // READY
 client.once(Events.ClientReady, async () => {
+  console.log("Bot online");
 
   const cartellino = new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId('timbra').setLabel('Entra').setStyle(ButtonStyle.Success),
@@ -104,17 +105,19 @@ client.on(Events.InteractionCreate, async interaction => {
   if (interaction.isButton()) {
 
     if (interaction.customId === "timbra") {
-      if (userData.start) return interaction.reply({ content: "Già in servizio", ephemeral: true });
+      if (userData.start)
+        return interaction.reply({ content: "Già in servizio", ephemeral: true });
 
       userData.start = Date.now();
       inServizio.add(id);
       saveData();
 
-      return interaction.reply({ content: "Entrato", ephemeral: true });
+      return interaction.reply({ content: "Entrato in servizio", ephemeral: true });
     }
 
     if (interaction.customId === "stimbra") {
-      if (!userData.start) return interaction.reply({ content: "Non in servizio", ephemeral: true });
+      if (!userData.start)
+        return interaction.reply({ content: "Non in servizio", ephemeral: true });
 
       const durata = Date.now() - userData.start;
       userData.ore += durata;
@@ -141,17 +144,26 @@ client.on(Events.InteractionCreate, async interaction => {
 
       const modal = new ModalBuilder()
         .setCustomId("multa_form")
-        .setTitle("Multa");
+        .setTitle("Multa LSPD");
 
       modal.addComponents(
         new ActionRowBuilder().addComponents(
-          new TextInputBuilder().setCustomId('utente').setLabel("Tag collega (@utente)").setStyle(TextInputStyle.Short)
+          new TextInputBuilder()
+            .setCustomId('utente')
+            .setLabel("Tag collega (@utente)")
+            .setStyle(TextInputStyle.Short)
         ),
         new ActionRowBuilder().addComponents(
-          new TextInputBuilder().setCustomId('motivo').setLabel("Motivo").setStyle(TextInputStyle.Paragraph)
+          new TextInputBuilder()
+            .setCustomId('motivo')
+            .setLabel("Motivo")
+            .setStyle(TextInputStyle.Paragraph)
         ),
         new ActionRowBuilder().addComponents(
-          new TextInputBuilder().setCustomId('importo').setLabel("Importo").setStyle(TextInputStyle.Short)
+          new TextInputBuilder()
+            .setCustomId('importo')
+            .setLabel("Importo")
+            .setStyle(TextInputStyle.Short)
         )
       );
 
@@ -193,7 +205,6 @@ Motivo: ${motivo}
   // COMANDI
   if (interaction.isChatInputCommand()) {
 
-    // INFO (tutti)
     if (interaction.commandName === "info") {
       const user = interaction.options.getUser("utente");
       const d = getUser(user.id);
@@ -207,12 +218,10 @@ Numero multe: ${d.multe.length}
 `);
     }
 
-    // STAFF
     if (!isStaff(interaction.member)) {
       return interaction.reply({ content: "Non autorizzato", ephemeral: true });
     }
 
-    // TOGLI ORE
     if (interaction.commandName === "togliore") {
       const user = interaction.options.getUser("utente");
       const ore = interaction.options.getInteger("ore");
@@ -225,7 +234,6 @@ Numero multe: ${d.multe.length}
       return interaction.reply("Ore aggiornate");
     }
 
-    // FORZA STOP
     if (interaction.commandName === "forzastop") {
       const user = interaction.options.getUser("utente");
       const d = getUser(user.id);
@@ -239,52 +247,26 @@ Numero multe: ${d.multe.length}
       saveData();
       return interaction.reply("Cartellino chiuso");
     }
-
-    // EDIT MULTA
-    if (interaction.commandName === "editmulta") {
-      const user = interaction.options.getUser("utente");
-      const idMulta = interaction.options.getString("id");
-      const nuovoImporto = interaction.options.getInteger("importo");
-
-      const d = getUser(user.id);
-      const multa = d.multe.find(m => m.id == idMulta);
-
-      if (!multa) return interaction.reply("Multa non trovata");
-
-      d.totaleMulte -= multa.importo;
-      multa.importo = nuovoImporto;
-      d.totaleMulte += nuovoImporto;
-
-      saveData();
-      return interaction.reply("Multa modificata");
-    }
   }
 });
 
-// COMANDI
+// SLASH COMMANDS
 const commands = [
   new SlashCommandBuilder()
     .setName("info")
-    .setDescription("Info utente")
-    .addUserOption(o => o.setName("utente").setRequired(true)),
+    .setDescription("Mostra statistiche")
+    .addUserOption(o => o.setName("utente").setDescription("Utente").setRequired(true)),
 
   new SlashCommandBuilder()
     .setName("togliore")
     .setDescription("Togli ore")
-    .addUserOption(o => o.setName("utente").setRequired(true))
-    .addIntegerOption(o => o.setName("ore").setRequired(true)),
+    .addUserOption(o => o.setName("utente").setDescription("Utente").setRequired(true))
+    .addIntegerOption(o => o.setName("ore").setDescription("Ore").setRequired(true)),
 
   new SlashCommandBuilder()
     .setName("forzastop")
     .setDescription("Chiudi cartellino")
-    .addUserOption(o => o.setName("utente").setRequired(true)),
-
-  new SlashCommandBuilder()
-    .setName("editmulta")
-    .setDescription("Modifica multa")
-    .addUserOption(o => o.setName("utente").setRequired(true))
-    .addStringOption(o => o.setName("id").setRequired(true))
-    .addIntegerOption(o => o.setName("importo").setRequired(true))
+    .addUserOption(o => o.setName("utente").setDescription("Utente").setRequired(true))
 ];
 
 const rest = new REST({ version: '10' }).setToken(TOKEN);
