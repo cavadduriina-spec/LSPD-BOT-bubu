@@ -17,7 +17,7 @@ const fs = require('fs');
 
 const TOKEN = process.env.TOKEN;
 
-// CONFIG
+
 const CARTELLINO_CHANNEL = "1496781775849000970";
 const MULTE_CHANNEL = "1496125333500465162";
 const LOG_CHANNEL = "1496616270265581641";
@@ -28,7 +28,7 @@ const STAFF_ROLE_2 = "1496613807953416202";
 const CLIENT_ID = "1496607395785343016";
 const GUILD_ID = "1496119913000206447";
 
-// DATABASE
+
 const DB_FILE = "./database.json";
 let data = {};
 
@@ -76,14 +76,14 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
 
-// READY
+
 client.once(Events.ClientReady, async () => {
 
   const cartellino = new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId('timbra').setLabel('🟢 Entra').setStyle(ButtonStyle.Success),
     new ButtonBuilder().setCustomId('stimbra').setLabel('🔴 Esci').setStyle(ButtonStyle.Danger),
     new ButtonBuilder().setCustomId('ore').setLabel('⏱ Ore').setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId('servizio').setLabel('👥 Servizio').setStyle(ButtonStyle.Secondary)
+    new ButtonBuilder().setCustomId('servizio').setLabel('👀 Servizio').setStyle(ButtonStyle.Secondary)
   );
 
   const multe = new ActionRowBuilder().addComponents(
@@ -97,23 +97,22 @@ Usa questi tasti per timbrare cartellino
 Timbra 🟢: timbra il tuo servizio  
 Stimbra 🔴: quando esci dal servizio, ti conterà le ore  
 Info ⏱: per sapere quante ore, minuti e secondi hai fatto  
-In servizio 👥: per vedere chi sta in servizio
+In servizio 👀: per vedere chi sta in servizio
 `,
     components: [cartellino]
   });
 
   (await client.channels.fetch(MULTE_CHANNEL)).send({
     content: `
-Usa questo bottone per segnare la multa
-
-Quando si aprirà il modulo compilalo con i dati richiesti
+# Usa questo bottone per segnare la multa
+# Quando si aprirà il modulo compilalo con i dati richiesti
 `,
     components: [multe]
   });
 
 });
 
-// INTERAZIONI
+
 client.on(Events.InteractionCreate, async interaction => {
 
   const id = interaction.user.id;
@@ -157,7 +156,7 @@ client.on(Events.InteractionCreate, async interaction => {
       return interaction.reply({ content: lista, ephemeral: true });
     }
 
-    if (interaction.customId === "multa") {
+    if (interaction.customId === "Modulo Multa") {
 
       const modal = new ModalBuilder()
         .setCustomId("multa_form")
@@ -270,7 +269,7 @@ Numero multe: ${d.multe.length}
   }
 });
 
-// SLASH
+
 const commands = [
   new SlashCommandBuilder()
     .setName("info")
