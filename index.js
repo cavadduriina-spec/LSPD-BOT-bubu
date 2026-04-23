@@ -92,12 +92,12 @@ client.once(Events.ClientReady, async () => {
 
   (await client.channels.fetch(CARTELLINO_CHANNEL)).send({
     content: `
-Usa questi tasti per timbrare cartellino
+# Usa questi tasti per timbrare cartellino
 
-Timbra 🟢: timbra il tuo servizio  
-Stimbra 🔴: quando esci dal servizio, ti conterà le ore  
-Info ⏱: per sapere quante ore, minuti e secondi hai fatto  
-In servizio 👀: per vedere chi sta in servizio
+# Timbra 🟢: timbra il tuo servizio  
+# Stimbra 🔴: quando esci dal servizio, ti conterà le ore  
+# Info ⏱: per sapere quante ore, minuti e secondi hai fatto  
+# In servizio 👀: per vedere chi sta in servizio
 `,
     components: [cartellino]
   });
